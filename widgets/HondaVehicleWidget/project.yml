@@ -1,0 +1,51 @@
+name: HondaVehicleWidget
+options:
+  bundleIdPrefix: com.yg.hondawidget
+  deploymentTarget:
+    iOS: "16.0"
+  createIntermediateGroups: true
+
+settings:
+  base:
+    SWIFT_VERSION: "5.9"
+    IPHONEOS_DEPLOYMENT_TARGET: "16.0"
+    CODE_SIGN_STYLE: Automatic
+    DEVELOPMENT_TEAM: "[TEAM_ID]"
+
+targets:
+  HondaWidgetApp:
+    type: application
+    platform: iOS
+    sources:
+      - path: App
+      - path: Shared
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.yg.hondawidget.app
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_CFBundleDisplayName: 本田车况
+        CODE_SIGN_ENTITLEMENTS: App/App.entitlements
+    info:
+      path: App/Info.plist
+      properties:
+        CFBundleURLTypes:
+          - CFBundleURLSchemes: [hondawidget]
+    dependencies:
+      - target: VehicleWidgetExtension
+        embed: true
+
+  VehicleWidgetExtension:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: Widget
+      - path: Shared
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.yg.hondawidget.app.widget
+        CODE_SIGN_ENTITLEMENTS: Widget/Widget.entitlements
+    info:
+      path: Widget/Info.plist
+      properties:
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension

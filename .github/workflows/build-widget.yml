@@ -1,0 +1,63 @@
+name: build-honda-widget-ipa
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "widgets/HondaVehicleWidget/**"
+      - ".github/workflows/build-widget.yml"
+
+jobs:
+  build:
+    # XcodeGen writes a Xcode 16 project (objectVersion 77);
+    # macos-14 only ships Xcode 15.4 and cannot open it.
+    runs-on: macos-15
+    timeout-minutes: 25
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Show toolchain
+        run: |
+          xcodebuild -version
+          xcode-select -p
+          sw_vers
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        working-directory: widgets/HondaVehicleWidget
+        run: xcodegen generate
+
+      - name: Build (unsigned)
+        working-directory: widgets/HondaVehicleWidget
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -project HondaVehicleWidget.xcodeproj \
+            -scheme HondaWidgetApp \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            DEVELOPMENT_TEAM=""
+
+      - name: Package into ipa
+        working-directory: widgets/HondaVehicleWidget
+        run: |
+          APP=$(find build/Build/Products/Release-iphoneos -maxdepth 1 -name "*.app" | head -1)
+          echo "app: $APP"
+          rm -rf out && mkdir -p out/Payload
+          cp -R "$APP" out/Payload/
+          cd out && zip -qry HondaWidgetApp.ipa Payload
+          ls -lh HondaWidgetApp.ipa
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: HondaWidgetApp-ipa
+          path: widgets/HondaVehicleWidget/out/HondaWidgetApp.ipa
+          retention-days: 30
